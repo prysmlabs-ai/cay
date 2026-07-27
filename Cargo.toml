@@ -1,0 +1,12 @@
+# An open, from-scratch userspace runtime for the Coral Edge TPU.
+# darwinn: Edge TPU executable loader. coral-rt: USB transport + execution engine.
+[workspace]
+resolver = "2"
+members = ["cay", "cay-program"]
+exclude = ["cay-py"]
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true

@@ -1,0 +1,166 @@
+{
+  "source": "https://github.com/google-coral/test_data/raw/master",
+  "models": [
+    {
+      "file": "deeplabv3_mnv2_pascal_quant_edgetpu.tflite",
+      "sha256": "4d899a809ac1d7032880392ef09ee1a891205ecaae2cde288fd3fe7f7dda966e",
+      "note": "semantic segmentation"
+    },
+    {
+      "file": "efficientdet_lite0_320_ptq_edgetpu.tflite",
+      "sha256": "4b17288c7988973274c63e10c914748363e7795ba715c6d8d7db1a2b909744a5",
+      "note": "detector, EfficientDet-Lite"
+    },
+    {
+      "file": "efficientdet_lite1_384_ptq_edgetpu.tflite",
+      "sha256": "635dd33cf5be42c74996fd582b5dbb73ca5f448e607d8203d66bde1685fdd493",
+      "note": "detector, EfficientDet-Lite"
+    },
+    {
+      "file": "efficientdet_lite2_448_ptq_edgetpu.tflite",
+      "sha256": "420a28a60cf7f9dfd24774aad361ece142a8acc326063c77abf3fdff07cf60cf",
+      "note": "detector, EfficientDet-Lite"
+    },
+    {
+      "file": "efficientdet_lite3_512_ptq_edgetpu.tflite",
+      "sha256": "4f98f09872404d9e28744d3ff694d8427a968ddb467a9aec0ac861bd9f3dba14",
+      "note": "detector, EfficientDet-Lite"
+    },
+    {
+      "file": "efficientnet-edgetpu-L_quant_edgetpu.tflite",
+      "sha256": "77105963eb9cfa0e485b2e0ec11b36dd1b9f7422091afb88237af6e77bbee885",
+      "note": "classifier, EfficientNet-EdgeTPU"
+    },
+    {
+      "file": "efficientnet-edgetpu-M_quant_edgetpu.tflite",
+      "sha256": "8495afb79e4d1540d3eb573a03c37d57bdbfa8b496037e4e4ca0c63c985c3b1d",
+      "note": "classifier, EfficientNet-EdgeTPU"
+    },
+    {
+      "file": "efficientnet-edgetpu-S_quant_edgetpu.tflite",
+      "sha256": "64e1abc43406dc87cd4e35ced5cea15a04b46e6fec51a48d513722c32b636928",
+      "note": "classifier, EfficientNet-EdgeTPU"
+    },
+    {
+      "file": "inception_v1_224_quant_edgetpu.tflite",
+      "sha256": "52f9e27c94d8638299b0a23f837600fb9377a640588fa631af36bde267a5cede",
+      "note": "classifier, Inception"
+    },
+    {
+      "file": "inception_v2_224_quant_edgetpu.tflite",
+      "sha256": "f6484f422ff9e01f91ef2324ae37d24ae59885544a938e3454222730f0486a70",
+      "note": "classifier, Inception"
+    },
+    {
+      "file": "inception_v3_299_quant_edgetpu.tflite",
+      "sha256": "078be579fab54e808ebd98e0bb751b4a9458aa39f250ce943072481cceee8cf6",
+      "note": "classifier, Inception"
+    },
+    {
+      "file": "inception_v4_299_quant_edgetpu.tflite",
+      "sha256": "37c817a9a919050e6b012e32a94386d756ee9105cfcccdac4bbba18047a7f6d6",
+      "note": "classifier, Inception"
+    },
+    {
+      "file": "keras_lstm_mnist_ptq_edgetpu.tflite",
+      "sha256": "1ee39c825eea0cdd45ca3cb66481921d4f48e0875dff8b4aba5d5dcc3472be79",
+      "descriptor": true,
+      "note": "recurrent LSTM; non-deterministic hints -> device-driven descriptor mode; multiple input tensors"
+    },
+    {
+      "file": "keras_post_training_unet_mv2_128_quant_edgetpu.tflite",
+      "sha256": "9ea96f305eec3f5962db4000763ddbff6a9432aec556e8facb73bfe6e9ff423f",
+      "note": "segmentation, U-Net"
+    },
+    {
+      "file": "mobilenet_v1_1.0_224_quant_edgetpu.tflite",
+      "sha256": "c1c8272e77dc8712fbb0e14be822c266fa1706671cbee8ef1631dc9739df6b6f",
+      "iters": 2,
+      "note": "classifier, MobileNet; iters=2 validates parameter-cache reuse (R5)"
+    },
+    {
+      "file": "mobilenet_v2_1.0_224_inat_bird_quant_edgetpu.tflite",
+      "sha256": "5b468dfe63ce4d79056bb19b953529e25df0a8d841b204c626576a1b8bd36afe",
+      "note": "classifier, iNaturalist bird (Frigate)"
+    },
+    {
+      "file": "movenet_single_pose_lightning_ptq_edgetpu.tflite",
+      "sha256": "25c88b77586f65c5c80d868c0555fb194f2b38c0b55aa491f4a93b7d7da58e78",
+      "note": "pose estimation"
+    },
+    {
+      "file": "movenet_single_pose_thunder_ptq_edgetpu.tflite",
+      "sha256": "3991bfff9039e260a35a86c16130dd866d7b811785dcc1a6050902afd7737fb1",
+      "note": "pose estimation"
+    },
+    {
+      "file": "ssd_mobilenet_v1_coco_quant_no_nms_edgetpu.tflite",
+      "sha256": "760241e1b045850cba5d3fc85ddcd2848e12cc69b827f232e4506e93a6eebd3b",
+      "note": "detector, raw (no NMS) outputs"
+    },
+    {
+      "file": "ssd_mobilenet_v1_coco_quant_postprocess_edgetpu.tflite",
+      "sha256": "90ea0ccfbe524ce877f794d59b61476a8ca9eac675becca55f47618029be4a87",
+      "note": "detector, SSD"
+    },
+    {
+      "file": "ssd_mobilenet_v2_coco_quant_postprocess_edgetpu.tflite",
+      "sha256": "b94e2d58222c32f31062c7604e10488e2aba9259ab77462039476a3ba4597fef",
+      "note": "detector, SSD"
+    },
+    {
+      "file": "ssd_mobilenet_v2_face_quant_postprocess_edgetpu.tflite",
+      "sha256": "aaadbd662cb167f8fda1aa2d04f35e27890e15f52069ba2f0ce0606e546fc7d2",
+      "note": "face detector"
+    },
+    {
+      "file": "ssdlite_mobiledet_coco_qat_postprocess_edgetpu.tflite",
+      "sha256": "b69e508ef2a670e06b80bd3e5559a827d5cd8d557c95d5e332cbf1d31d434a2e",
+      "note": "detector, SSD"
+    },
+    {
+      "file": "tf2_mobilenet_v2_1.0_224_ptq_edgetpu.tflite",
+      "sha256": "352212c8f958da27c74a42d7eb3598a337a99a981b5d172a0898729ab664bbca",
+      "note": "classifier, TF2 MobileNet"
+    },
+    {
+      "file": "tf2_mobilenet_v3_edgetpu_1.0_224_ptq_edgetpu.tflite",
+      "sha256": "c113678c5fd5810c91ce8443f05c1ab99ceed8997add37f64c4bd354c2fb4f26",
+      "note": "classifier, TF2 MobileNet"
+    },
+    {
+      "file": "tf2_ssd_mobilenet_v2_coco17_ptq_edgetpu.tflite",
+      "sha256": "d89ff2007a8ead92b819abb93486905bf708e4bba2a3c90730193c6266e0e697",
+      "note": "detector, SSD"
+    },
+    {
+      "file": "tfhub_tf2_resnet_50_imagenet_ptq_edgetpu.tflite",
+      "sha256": "c6f8817e8598d216e38a5c71ad0d2ec13d269cc4ac206b426d5f76245dc63e41",
+      "note": "classifier, ResNet-50"
+    },
+    {
+      "file": "yolov5s-int8-224_edgetpu.tflite",
+      "url": "https://github.com/jveitchmichaelis/edgetpu-yolo/raw/main/yolov5s-int8-224_edgetpu.tflite",
+      "sha256": "cd34b26de97931c0912866c11cd46e78d1cd0cf6533695bccc604cb15593f2a3",
+      "note": "detector, YOLOv5s; 2 edge-TPU subgraphs split by a host TRANSPOSE (host-op interleave, R5)"
+    }
+  ],
+  "pipelines": [
+    {
+      "note": "inception_v3 split into 2 co-compiled edge-TPU segments; chained seg0->seg1 must reproduce the full model (R5 multi-subgraph + multi-input)",
+      "reference": "inception_v3_299_quant_edgetpu.tflite",
+      "segments": [
+        {
+          "file": "inception_v3_299_quant_segment_0_of_2_edgetpu.tflite",
+          "src": "pipeline/inception_v3_299_quant_segment_0_of_2_edgetpu.tflite",
+          "sha256": "872e9bda35a6c1cd9be81aa3e2bd31ee5c3eefbd7bfe06e6c8e0d1bf1e3dc1cb"
+        },
+        {
+          "file": "inception_v3_299_quant_segment_1_of_2_edgetpu.tflite",
+          "src": "pipeline/inception_v3_299_quant_segment_1_of_2_edgetpu.tflite",
+          "sha256": "e5372e0c0627570404e3410e2cffc0cec47219d2dff7bc63be2e44bcd40bfe57"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+[package]
+name = "cay"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Userspace runtime for the Coral Edge TPU. Rust port of libedgetpu (Apache-2.0)."
+repository = "https://github.com/prysmlabs-ai/cay"
+readme = "../README.md"
+keywords = ["coral", "edgetpu", "tpu", "inference", "npu"]
+categories = ["hardware-support", "artificial-intelligence"]
+
+[lib]
+name = "cay"
+path = "src/lib.rs"
+
+[[bin]]
+name = "cay-probe"
+path = "src/bin/cay_probe.rs"
+
+[[bin]]
+name = "cay-flash"
+path = "src/bin/cay_flash.rs"
+
+[[bin]]
+name = "cay-reg"
+path = "src/bin/cay_reg.rs"
+
+[[bin]]
+name = "cay-init"
+path = "src/bin/cay_init.rs"
+
+[[bin]]
+name = "cay-reset"
+path = "src/bin/cay_reset.rs"
+
+[[bin]]
+name = "cay-infer"
+path = "src/bin/cay_infer.rs"
+
+[[bin]]
+name = "cay-pipeline"
+path = "src/bin/cay_pipeline.rs"
+
+[dependencies]
+rusb = "0.9"
+cay-program = { path = "../cay-program" }
+libc = "0.2"

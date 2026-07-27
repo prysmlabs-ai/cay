@@ -1,0 +1,12 @@
+This crate is a Rust port of the DarwiNN executable format from libedgetpu.
+
+  libedgetpu — https://github.com/google-coral/libedgetpu
+  Copyright The libedgetpu Authors.
+  Licensed under the Apache License, Version 2.0.
+
+schema/executable.fbs is vendored from libedgetpu (executable/executable.fbs) with one
+mechanical edit: the `(nested_flatbuffer: "Package")` codegen hint on
+SerializedPackage.serialized_package is removed (planus does not accept the attribute).
+The field stays `[ubyte]`; the nested Package buffer is decoded by the reader instead.
+The generated reader (src/executable_generated.rs) is produced from it by planus.
+No code is derived from the closed edgetpu_compiler or from device firmware.

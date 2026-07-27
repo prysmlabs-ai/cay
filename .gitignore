@@ -1,0 +1,6 @@
+target/
+**/*.rs.bk
+Cargo.lock.bak
+
+# transient build/clippy output redirects
+*.log
