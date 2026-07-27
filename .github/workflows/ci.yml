@@ -1,0 +1,48 @@
+# Synced from a private monorepo; edits made here return as a pull request.
+# Paths are relative to the published repo root, where this directory sits at
+# the top level.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-14]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+
+      # rusb links system libusb through pkg-config.
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
+      - if: runner.os == 'macOS'
+        run: brew install libusb
+
+      - run: cargo fmt --all --check
+      - run: cargo clippy --all-targets
+
+      # No accelerator is attached here. The tests that need one read
+      # CORAL_TEST_* and skip when it is unset, which leaves the executable
+      # parser, relayout, DMA, CSR and DFU logic covered.
+      - run: cargo test
+
+  bindings:
+    # cay-py sits outside the workspace: a cdylib wheel needs its own release
+    # profile, so the matrix job above never touches it.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
+      - run: cargo check --manifest-path cay-py/Cargo.toml

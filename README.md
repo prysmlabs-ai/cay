@@ -34,7 +34,7 @@ You need a compiled model. cay executes the Edge TPU program that
 The Python surface mirrors the pycoral calls that matter:
 
 ```python
-from coral_rt import make_interpreter
+from cay import make_interpreter
 
 interp = make_interpreter("model_edgetpu.tflite")
 interp.set_input(image_bytes)

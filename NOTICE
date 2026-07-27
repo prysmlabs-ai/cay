@@ -1,4 +1,4 @@
-coral-rt
+cay
 Copyright 2026 Prysm Labs
 
 This product includes software derived from libedgetpu
@@ -9,6 +9,10 @@ The userspace runtime here — USB transport, CSR/DMA handling, the executable
 loader and the execution engine — is a Rust port derived from that Apache-2.0
 source, with the TensorFlow Lite dependency removed. It is a licensed
 derivative work, not a clean-room reimplementation.
+
+cay-program/schema/executable.fbs is Google's DarwiNN executable IDL,
+reproduced unmodified; cay-program/src/executable_generated.rs is flatc output
+from it, which is why both retain the platforms.darwinn namespace.
 
 No part of this project derives from, links against, or reproduces any closed
 component of the Edge TPU toolchain.

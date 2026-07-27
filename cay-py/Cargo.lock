@@ -21,6 +21,32 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 
 [[package]]
+name = "cay"
+version = "0.1.0"
+dependencies = [
+ "cay-program",
+ "libc",
+ "rusb",
+]
+
+[[package]]
+name = "cay-program"
+version = "0.1.0"
+dependencies = [
+ "planus",
+ "serde",
+]
+
+[[package]]
+name = "cay-py"
+version = "0.1.0"
+dependencies = [
+ "cay",
+ "cay-program",
+ "pyo3",
+]
+
+[[package]]
 name = "cc"
 version = "1.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -35,32 +61,6 @@ name = "cfg-if"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9330f8b2ff13f34540b44e946ef35111825727b38d33286ef986142615121801"
-
-[[package]]
-name = "coral-rt"
-version = "0.1.0"
-dependencies = [
- "darwinn",
- "libc",
- "rusb",
-]
-
-[[package]]
-name = "coral-rt-py"
-version = "0.1.0"
-dependencies = [
- "coral-rt",
- "darwinn",
- "pyo3",
-]
-
-[[package]]
-name = "darwinn"
-version = "0.1.0"
-dependencies = [
- "planus",
- "serde",
-]
 
 [[package]]
 name = "equivalent"

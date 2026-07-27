@@ -1,9 +1,9 @@
-"""Bit-exact battery: run each Edge TPU model through coral-rt and through
+"""Bit-exact battery: run each Edge TPU model through cay and through
 libedgetpu (LiteRT + the edgetpu delegate) and require byte-identical output.
 
 The reference must use preserve_all_tensors: LiteRT reuses an edge-TPU op's
 output buffers for downstream ops, so a plain get_tensor after invoke returns
-overwritten data. Outputs are matched by tensor name, since coral-rt emits them
+overwritten data. Outputs are matched by tensor name, since cay emits them
 in DMA-hint order which need not match the tflite node's output order.
 """
 
@@ -77,7 +77,7 @@ def _oracle(interp, input_bytes):
         n: interp.get_tensor(byname[n]["index"]).reshape(-1).view(np.uint8).tobytes()
         for n in edgetpu_op_outputs(interp)
     }
-    # coral-rt runs the edge-TPU package, whose inputs are the op's input tensors
+    # cay runs the edge-TPU package, whose inputs are the op's input tensors
     # in the layer's representation (after any CPU pre-op like a quantize), not the
     # model input. Feed exactly those — the activation and any state constants.
     inputs = {}
@@ -205,7 +205,7 @@ def run_pipeline(segment_paths, out_prefix, inputs):
 
 def pipeline_check(manifest, rng, width):
     """Multi-subgraph gate: a model split into co-compiled segments, run
-    seg0->seg1 through coral-rt, must reproduce the full model's edge-TPU output."""
+    seg0->seg1 through cay, must reproduce the full model's edge-TPU output."""
     passed = failed = 0
     for pl in manifest.get("pipelines", []):
         ref_model = MODELS / pl["reference"]
