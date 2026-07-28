@@ -67,8 +67,7 @@ def main():
             hits += 1
             bad += fetch_one(f"{base}/{seg['src']}", MODELS / seg["file"], seg["sha256"])
 
-    # A filter that matches nothing would leave the caller with an empty models/
-    # and tests that skip themselves green. Say so instead.
+    # An unmatched filter would leave models/ empty and every test skipping.
     if wanted and not hits:
         print(f"no model in the manifest matches {wanted}")
         bad += 1

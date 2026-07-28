@@ -50,19 +50,16 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y libusb-1.0-0-dev
       - run: cargo check --manifest-path cay-py/Cargo.toml
 
-      # Build and exercise the wheel. Most of the Interpreter surface needs no
-      # accelerator — parsing, tensor metadata and index handling all come from
-      # the model file — so this covers the contract consumers depend on.
+      # Most of the Interpreter surface needs no accelerator: parsing, tensor
+      # metadata and index handling come from the model file.
       - run: pip install maturin numpy pytest
       - run: maturin build --release --manifest-path cay-py/Cargo.toml --out dist
       - run: pip install --force-reinstall dist/*.whl
 
-      # The battery is gitignored, so without this the suite would skip itself
-      # green. One detector is enough: two quantized outputs and a real input
-      # spec is the whole metadata surface. fetch.py fails on a bad hash or an
-      # unmatched filter, so a silent empty models/ cannot get past here.
+      # The battery is gitignored; without a model every test skips and the job
+      # passes empty. One detector covers the metadata surface.
       - run: python cay/tests/battery/fetch.py ssd_mobilenet_v1_coco_quant_no_nms
 
-      # Run from cay-py: at the repo root the `cay/` directory shadows the
-      # installed module as a namespace package.
+      # From cay-py: at the repo root the `cay/` directory shadows the installed
+      # module as a namespace package.
       - run: cd cay-py && python -m pytest tests -q

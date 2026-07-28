@@ -58,6 +58,12 @@ pub struct Driver {
     resident_param: std::cell::Cell<u64>,
 }
 
+impl Drop for Driver {
+    fn drop(&mut self) {
+        self.close();
+    }
+}
+
 impl Driver {
     /// Opens the runtime device and brings the chip out of reset, up to and
     /// including InitializeChip. Use `run` to move the scalar core to running.
@@ -260,15 +266,23 @@ impl Driver {
             self.run_descriptors(prog, inputs)
         };
         if result.is_err() {
+            // A port reset drops the SRAM-resident firmware, leaving the device
+            // in DFU or off the bus, so it waits until the chip stops answering
+            // control transfers and nothing else can reach it.
             self.csr.clear_halts();
-            let _ = self.halt();
-            // A hard-wedged accelerator falls off the USB bus; a port reset
-            // re-enumerates it without a physical replug — and wipes on-chip SRAM,
-            // so any cached weights are gone (driver.cc:442 clears the token).
-            let _ = self.csr.reset();
+            if self.halt().is_err() {
+                let _ = self.csr.reset();
+            }
             self.resident_param.set(0);
         }
         result
+    }
+
+    /// Leaves the chip idle for whoever opens it next, so a process that exits
+    /// between inferences does not hand the next `open` a running core.
+    pub fn close(&self) {
+        let _ = self.halt();
+        self.csr.clear_halts();
     }
 
     /// Fingerprint of the weights currently resident on-chip (0 = none). A repeat

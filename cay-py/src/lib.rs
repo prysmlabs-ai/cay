@@ -1,21 +1,18 @@
 //! Python bindings for the cay runtime.
 //!
-//! The surface mirrors the parts of `tflite_runtime.interpreter.Interpreter`
-//! that consumers actually call — `allocate_tensors`, `get_input_details`,
-//! `get_output_details`, `set_tensor`, `invoke`, `get_tensor` — so code written
-//! against the Edge TPU delegate runs here with an import swap. The runtime
-//! drives the accelerator directly: no libedgetpu, no TFLite.
+//! The surface mirrors `tflite_runtime.interpreter.Interpreter` —
+//! `allocate_tensors`, `get_input_details`, `get_output_details`, `set_tensor`,
+//! `invoke`, `get_tensor` — so code written against the Edge TPU delegate runs
+//! here with an import swap.
 //!
-//! **What this executes.** cay runs the Edge TPU program embedded in the model
-//! and returns that program's output tensors. It is not a TFLite interpreter:
-//! operators the compiler left on the CPU — `TFLite_Detection_PostProcess` in
-//! stock SSD graphs, for instance — do not run here, so those graphs yield the
-//! accelerator's raw heads rather than decoded boxes. Post-process in the
-//! caller.
+//! This runs the Edge TPU program embedded in the model and returns that
+//! program's output tensors. Operators the compiler left on the CPU, such as
+//! `TFLite_Detection_PostProcess` in stock SSD graphs, do not execute, so those
+//! graphs yield raw heads rather than decoded boxes. Post-process in the caller.
 //!
-//! Arrays are built through numpy's Python API rather than rust-numpy, which
-//! keeps the extension on the limited API: one abi3 wheel per platform covers
-//! every CPython from 3.8 up.
+//! Arrays go through numpy's Python API rather than rust-numpy, which keeps the
+//! extension on the limited API: one abi3 wheel per platform covers CPython 3.8
+//! up.
 
 use pyo3::exceptions::{PyIndexError, PyRuntimeError};
 use pyo3::prelude::*;
@@ -51,6 +48,10 @@ struct Interpreter {
     /// Positions in `program.outputs` that are user-visible, in order. Recurrent
     /// state buffers are written by the accelerator but are not model outputs.
     visible: Vec<usize>,
+    /// Opened on the first `invoke` and held: bring-up costs an order of
+    /// magnitude more than an inference, and a held driver keeps the model's
+    /// weights resident on-chip between calls.
+    driver: Option<::cay::driver::Driver>,
 }
 
 #[pymethods]
@@ -75,6 +76,7 @@ impl Interpreter {
             inputs,
             outputs: Vec::new(),
             visible,
+            driver: None,
         })
     }
 
@@ -153,15 +155,28 @@ impl Interpreter {
         Ok(())
     }
 
-    /// Brings the chip up and runs one inference over the staged inputs.
+    /// Runs one inference over the staged inputs, bringing the chip up on the
+    /// first call.
     fn invoke(&mut self) -> PyResult<()> {
-        let driver = ::cay::driver::Driver::open().map_err(|e| err("chip bring-up", e))?;
-        driver.run().map_err(|e| err("run", e))?;
+        if self.driver.is_none() {
+            let d = ::cay::driver::Driver::open().map_err(|e| err("chip bring-up", e))?;
+            d.run().map_err(|e| err("run", e))?;
+            self.driver = Some(d);
+        }
         let refs: Vec<&[u8]> = self.inputs.iter().map(|v| v.as_slice()).collect();
-        self.outputs = driver
-            .run_program(&self.program, &refs)
-            .map_err(|e| err("inference", e))?;
-        Ok(())
+        let driver = self.driver.as_ref().expect("opened above");
+        match driver.run_program(&self.program, &refs) {
+            Ok(outputs) => {
+                self.outputs = outputs;
+                Ok(())
+            }
+            Err(e) => {
+                // run_program's recovery can undo what open() set up, so the
+                // next invoke starts from a fresh handle.
+                self.driver = None;
+                Err(err("inference", e))
+            }
+        }
     }
 
     /// The tensor at `index` as a numpy array of its declared shape and dtype.
@@ -186,6 +201,12 @@ impl Interpreter {
         let flat = np.call_method1("frombuffer", (raw, dtype))?;
         let [h, w, c] = spec.dims;
         flat.call_method1("reshape", ((1usize, h, w, c),))
+    }
+
+    /// Halts the chip and releases it without waiting for collection. Calling
+    /// it twice is harmless; a later `invoke` reopens the device.
+    fn close(&mut self) {
+        self.driver = None;
     }
 
     /// Single-input convenience retained from the original surface.
