@@ -9,8 +9,8 @@ models. USB Accelerator only; PCIe and M.2 are not supported yet.
 
 The stock stack has aged badly: libedgetpu is frozen against an old TensorFlow
 ABI, pycoral wants an interpreter that current Python releases no longer ship,
-and the PCIe kernel driver stopped building on modern kernels. cay talks to
-the device over libusb from userspace, so none of that applies.
+and the PCIe kernel driver stopped building on modern kernels. cay talks to the
+device over libusb from userspace, so none of that applies.
 
 ## Install
 
@@ -23,10 +23,16 @@ pip install cay-py
 The distribution is `cay-py` because `cay` is taken on PyPI; the import is
 `cay` either way.
 
-Rust:
+Rust, as a library:
 
 ```sh
 cargo add cay
+```
+
+Or for the command-line tools below:
+
+```sh
+cargo install cay
 ```
 
 You need a compiled model. cay executes the Edge TPU program that
@@ -63,19 +69,19 @@ inputs. Segments run in the order given.
 
 ## What it is made of
 
-| crate | job |
-|---|---|
-| `cay` | the crate: USB transport, CSR and DMA handling, DFU, the execution engine, and `cay::program`, which reads the DarwiNN executable format |
-| `cay-py` | PyO3 bindings shaped like pycoral, published to PyPI |
+| package | registry | job |
+|---|---|---|
+| `cay` | crates.io | USB transport, CSR and DMA handling, DFU, the execution engine, and `cay::program`, which reads the DarwiNN executable format |
+| `cay-py` | PyPI | PyO3 bindings shaped like pycoral |
 
 ## Correctness
 
-Every model in the battery runs through cay and through libedgetpu, and
-the outputs must match byte for byte. The reference side uses
+Every model in the battery runs through cay and through libedgetpu, and the
+outputs must match byte for byte. The reference side uses
 `preserve_all_tensors`, because LiteRT reuses an Edge TPU op's output buffers
 for downstream ops and a plain `get_tensor` after invoke returns overwritten
-data. Outputs are matched by tensor name: cay emits them in DMA-hint
-order, which need not match the tflite node's order.
+data. Outputs are matched by tensor name: cay emits them in DMA-hint order,
+which need not match the tflite node's order.
 
 The battery covers classification, detection and segmentation models, single
 segment and co-compiled multi-segment.
@@ -90,8 +96,8 @@ host:
 cay-flash /path/to/apex_latest_single_ep.bin
 ```
 
-cay neither bundles nor downloads firmware, and `flash()` in the Python
-module takes the same explicit path.
+cay neither bundles nor downloads firmware, and `flash()` in the Python module
+takes the same explicit path.
 
 ## License
 
