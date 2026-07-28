@@ -56,6 +56,13 @@ jobs:
       - run: pip install maturin numpy pytest
       - run: maturin build --release --manifest-path cay-py/Cargo.toml --out dist
       - run: pip install --force-reinstall dist/*.whl
+
+      # The battery is gitignored, so without this the suite would skip itself
+      # green. One detector is enough: two quantized outputs and a real input
+      # spec is the whole metadata surface. fetch.py fails on a bad hash or an
+      # unmatched filter, so a silent empty models/ cannot get past here.
+      - run: python cay/tests/battery/fetch.py ssd_mobilenet_v1_coco_quant_no_nms
+
       # Run from cay-py: at the repo root the `cay/` directory shadows the
       # installed module as a namespace package.
       - run: cd cay-py && python -m pytest tests -q

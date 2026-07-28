@@ -1,5 +1,11 @@
 """Download the model battery listed in manifest.json into models/, verifying
 sha256. Re-running skips files already present with the right hash.
+
+Arguments narrow the set to filenames containing any of them, which is how CI
+pulls one model instead of the whole battery:
+
+    python fetch.py                       # everything
+    python fetch.py ssd_mobilenet_v1      # both ssd_mobilenet_v1 models
 """
 
 import hashlib
@@ -39,15 +45,33 @@ def main():
     manifest = json.loads((HERE / "manifest.json").read_text())
     MODELS.mkdir(exist_ok=True)
     base = manifest["source"]
+    wanted = sys.argv[1:]
     bad = 0
+    hits = 0
+
+    def keep(name):
+        return not wanted or any(w in name for w in wanted)
+
     for entry in manifest["models"]:
+        if not keep(entry["file"]):
+            continue
+        hits += 1
         # Most models share the test_data base; a few (e.g. YOLO) carry a full url.
         url = entry.get("url", f"{base}/{entry['file']}")
         bad += fetch_one(url, MODELS / entry["file"], entry["sha256"])
     # Pipeline segments live under a subdir in the source tree (src != file).
     for pl in manifest.get("pipelines", []):
         for seg in pl["segments"]:
+            if not keep(seg["file"]):
+                continue
+            hits += 1
             bad += fetch_one(f"{base}/{seg['src']}", MODELS / seg["file"], seg["sha256"])
+
+    # A filter that matches nothing would leave the caller with an empty models/
+    # and tests that skip themselves green. Say so instead.
+    if wanted and not hits:
+        print(f"no model in the manifest matches {wanted}")
+        bad += 1
     sys.exit(1 if bad else 0)
 
 
