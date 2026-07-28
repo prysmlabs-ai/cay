@@ -67,8 +67,8 @@ impl From<rusb::Error> for Error {
     }
 }
 
-impl From<cay_program::Error> for Error {
-    fn from(e: cay_program::Error) -> Self {
+impl From<crate::program::Error> for Error {
+    fn from(e: crate::program::Error) -> Self {
         Error::Parse(e.to_string())
     }
 }

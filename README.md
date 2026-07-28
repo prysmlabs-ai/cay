@@ -62,9 +62,8 @@ inputs. Segments run in the order given.
 
 | crate | job |
 |---|---|
-| `cay-program` | reads the DarwiNN executable format: package, programs, parameter patching, tensor relayout |
-| `cay` | USB transport, CSR and DMA handling, DFU, and the execution engine |
-| `cay-py` | PyO3 bindings shaped like pycoral |
+| `cay` | the crate: USB transport, CSR and DMA handling, DFU, the execution engine, and `cay::program`, which reads the DarwiNN executable format |
+| `cay-py` | PyO3 bindings shaped like pycoral, published to PyPI |
 
 ## Correctness
 

@@ -1,4 +1,4 @@
-use cay_program::schema::{Executable, ExecutableType, OutputLayout, OutputLayoutRef};
+use cay::program::schema::{Executable, ExecutableType, OutputLayout, OutputLayoutRef};
 use planus::{Builder, ReadAsRoot};
 
 #[test]
@@ -67,7 +67,7 @@ fn executable_fields_roundtrip() {
         .finish(&mut b);
     let buf = b.finish(ex, None).to_vec();
 
-    let got = cay_program::parse_executable(&buf).unwrap();
+    let got = cay::program::parse_executable(&buf).unwrap();
     assert_eq!(got.name().unwrap(), Some("yolo"));
     assert_eq!(got.scratch_size_bytes().unwrap(), 4096);
     assert_eq!(got.parameters().unwrap(), Some(params.as_slice()));

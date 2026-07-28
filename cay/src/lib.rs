@@ -8,4 +8,5 @@ pub mod dma;
 pub mod driver;
 pub mod error;
 pub mod ml;
+pub mod program;
 pub mod usb;

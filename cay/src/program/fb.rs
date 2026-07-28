@@ -3,7 +3,7 @@
 //! binary Executable buffers; planus's UTF-8-checked `&str` accessor rejects
 //! them, so the vector is walked here and its elements returned as `&[u8]`.
 
-use crate::error::{Error, Result};
+use crate::program::error::{Error, Result};
 
 fn off(a: usize, b: usize) -> Result<usize> {
     a.checked_add(b).ok_or(Error::Malformed("offset overflow"))

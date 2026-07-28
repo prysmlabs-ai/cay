@@ -3,8 +3,8 @@
 //! immediate fields the compiler marked with FieldOffsets. Bounds checks replace
 //! libedgetpu's fatal CHECKs, so bad metadata returns `Err` instead of aborting.
 
-use crate::error::{Error, Result};
-use crate::schema::{Description, InstructionBitstreamRef, Position};
+use crate::program::error::{Error, Result};
+use crate::program::schema::{Description, InstructionBitstreamRef, Position};
 
 /// One field to link: which base address, which 32-bit half, and where.
 #[derive(Debug, Clone)]

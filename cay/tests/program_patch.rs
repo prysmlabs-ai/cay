@@ -1,5 +1,5 @@
-use cay_program::schema::{Description, InstructionBitstream, InstructionBitstreamRef, Position};
-use cay_program::{copy_u32, field_sites, link_input, link_parameter, read_u32, FieldSite};
+use cay::program::schema::{Description, InstructionBitstream, InstructionBitstreamRef, Position};
+use cay::program::{copy_u32, field_sites, link_input, link_parameter, read_u32, FieldSite};
 use planus::{Builder, ReadAsRoot};
 
 #[test]
@@ -135,13 +135,13 @@ fn link_input_matches_name_and_batch() {
 #[test]
 fn field_sites_reads_planus_metadata() {
     let mut b = Builder::new();
-    let meta = cay_program::schema::Meta::builder()
+    let meta = cay::program::schema::Meta::builder()
         .desc(Description::BaseAddressParameter)
         .batch(0)
         .name_as_null()
         .position(Position::Upper32bit)
         .finish(&mut b);
-    let fo = cay_program::schema::FieldOffset::builder()
+    let fo = cay::program::schema::FieldOffset::builder()
         .meta(meta)
         .offset_bit(96)
         .finish(&mut b);

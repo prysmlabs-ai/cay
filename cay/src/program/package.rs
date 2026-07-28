@@ -1,9 +1,9 @@
 //! Reads a DarwiNN `Package` and the executables it carries. Instruction
 //! bitstreams stay opaque bytes — this layer never interprets the device ISA.
 
-use crate::error::{Error, Result};
-use crate::fb;
-use crate::schema::{ExecutableRef, PackageRef};
+use crate::program::error::{Error, Result};
+use crate::program::fb;
+use crate::program::schema::{ExecutableRef, PackageRef};
 use planus::ReadAsRoot;
 
 const FILE_IDENTIFIER: [u8; 4] = *b"DWN1";

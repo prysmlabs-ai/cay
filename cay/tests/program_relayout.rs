@@ -1,5 +1,5 @@
-use cay_program::relayout;
-use cay_program::schema::OutputLayout;
+use cay::program::relayout;
+use cay::program::schema::OutputLayout;
 
 // The 2x2-tile → 4x5x32 worked example from executable.fbs.
 fn worked_example() -> OutputLayout {

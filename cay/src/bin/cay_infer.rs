@@ -16,14 +16,14 @@ fn main() {
     // per edge-TPU subgraph. Run each, feeding its inputs by name from what the
     // caller supplied — the host ops between them are already reflected in those
     // input tensors (this binary runs the accelerator parts, not the host ops).
-    let packages = cay_program::extract_packages(&model);
+    let packages = cay::program::extract_packages(&model);
     if packages.is_empty() {
         eprintln!("no DWN1 package in model");
         std::process::exit(1);
     }
-    let programs: Vec<cay_program::Program> = packages
+    let programs: Vec<cay::program::Program> = packages
         .iter()
-        .map(|p| cay_program::Program::from_package(p).expect("build program"))
+        .map(|p| cay::program::Program::from_package(p).expect("build program"))
         .collect();
 
     let mut provided = HashMap::new();

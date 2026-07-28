@@ -10,10 +10,10 @@ fn parses_real_edgetpu_model() {
     };
     let bytes = std::fs::read(&path).expect("read model");
 
-    let pkg_bytes = cay_program::extract_package(&bytes).expect("no DWN1 package in model");
-    let pkg = cay_program::parse_package(pkg_bytes).expect("parse package");
-    let multi = cay_program::multi_executable_bytes(&pkg).expect("multi-executable");
-    let blobs = cay_program::executable_blobs(multi).expect("executable blobs");
+    let pkg_bytes = cay::program::extract_package(&bytes).expect("no DWN1 package in model");
+    let pkg = cay::program::parse_package(pkg_bytes).expect("parse package");
+    let multi = cay::program::multi_executable_bytes(&pkg).expect("multi-executable");
+    let blobs = cay::program::executable_blobs(multi).expect("executable blobs");
     assert!(!blobs.is_empty(), "no executables");
 
     let mut instr_bytes = 0usize;
@@ -23,7 +23,7 @@ fn parses_real_edgetpu_model() {
     let mut outputs = 0usize;
 
     for blob in &blobs {
-        let exec = cay_program::parse_executable(blob).expect("parse executable");
+        let exec = cay::program::parse_executable(blob).expect("parse executable");
 
         let mut ib_bytes = 0usize;
         let mut fos = 0usize;
@@ -77,9 +77,9 @@ fn assembles_inference_streams_from_real_model() {
         return;
     };
     let bytes = std::fs::read(&path).expect("read model");
-    let pkg = cay_program::extract_package(&bytes).expect("no DWN1 package");
+    let pkg = cay::program::extract_package(&bytes).expect("no DWN1 package");
 
-    let streams = cay_program::inference_streams(pkg).expect("assemble streams");
+    let streams = cay::program::inference_streams(pkg).expect("assemble streams");
     eprintln!(
         "streams: {} param bytes, {} exec-instruction bytes, input {} bytes, output {} bytes",
         streams.parameters.len(),
@@ -101,30 +101,30 @@ fn patches_real_model_field_offsets() {
         return;
     };
     let bytes = std::fs::read(&path).expect("read model");
-    let pkg = cay_program::extract_package(&bytes).expect("no DWN1 package");
-    let package = cay_program::parse_package(pkg).expect("parse package");
-    let multi = cay_program::multi_executable_bytes(&package).expect("multi-executable");
-    let blobs = cay_program::executable_blobs(multi).expect("executable blobs");
+    let pkg = cay::program::extract_package(&bytes).expect("no DWN1 package");
+    let package = cay::program::parse_package(pkg).expect("parse package");
+    let multi = cay::program::multi_executable_bytes(&package).expect("multi-executable");
+    let blobs = cay::program::executable_blobs(multi).expect("executable blobs");
 
     // Every field offset the compiler emitted must be a valid, patchable bit
     // position in its instruction bitstream — the sites the driver links.
     let mut checked = 0usize;
     for blob in &blobs {
-        let exec = cay_program::parse_executable(blob).expect("parse executable");
+        let exec = cay::program::parse_executable(blob).expect("parse executable");
         let Some(ibs) = exec.instruction_bitstreams().expect("instructions") else {
             continue;
         };
         for ib in ibs.iter() {
             let ib = ib.expect("instruction bitstream");
-            let sites = cay_program::field_sites(ib).expect("field sites");
+            let sites = cay::program::field_sites(ib).expect("field sites");
             if sites.is_empty() {
                 continue;
             }
             let mut buf = ib.bitstream().expect("bitstream").expect("bytes").to_vec();
             for site in &sites {
-                cay_program::copy_u32(&mut buf, site.offset_bit, 0xdead_beef).expect("patch");
+                cay::program::copy_u32(&mut buf, site.offset_bit, 0xdead_beef).expect("patch");
                 assert_eq!(
-                    cay_program::read_u32(&buf, site.offset_bit).expect("read back"),
+                    cay::program::read_u32(&buf, site.offset_bit).expect("read back"),
                     0xdead_beef,
                     "offset_bit {}",
                     site.offset_bit
@@ -145,8 +145,8 @@ fn parses_multi_output_model() {
         return;
     };
     let bytes = std::fs::read(&path).expect("read model");
-    let pkg = cay_program::extract_package(&bytes).expect("no DWN1 package");
-    let program = cay_program::Program::from_package(pkg).expect("build program");
+    let pkg = cay::program::extract_package(&bytes).expect("no DWN1 package");
+    let program = cay::program::Program::from_package(pkg).expect("build program");
 
     eprintln!(
         "input {} bytes, {} outputs, scratch {}",
@@ -203,13 +203,13 @@ fn inspects_real_model_dma_hints() {
         return;
     };
     let bytes = std::fs::read(&path).expect("read model");
-    let pkg = cay_program::extract_package(&bytes).expect("no DWN1 package");
-    let package = cay_program::parse_package(pkg).expect("parse package");
-    let multi = cay_program::multi_executable_bytes(&package).expect("multi-executable");
-    let blobs = cay_program::executable_blobs(multi).expect("executable blobs");
+    let pkg = cay::program::extract_package(&bytes).expect("no DWN1 package");
+    let package = cay::program::parse_package(pkg).expect("parse package");
+    let multi = cay::program::multi_executable_bytes(&package).expect("multi-executable");
+    let blobs = cay::program::executable_blobs(multi).expect("executable blobs");
 
     for blob in &blobs {
-        let exec = cay_program::parse_executable(blob).expect("parse executable");
+        let exec = cay::program::parse_executable(blob).expect("parse executable");
         let ty = exec.type_().expect("type");
         match exec.dma_hints().expect("dma_hints") {
             None => eprintln!("{ty:?}: no dma_hints"),
@@ -223,7 +223,7 @@ fn inspects_real_model_dma_hints() {
                     let hint = hint.expect("hint");
                     let dir = hint.direction().expect("direction");
                     match hint.any_hint().expect("any_hint") {
-                        Some(cay_program::schema::AnyHintRef::DmaDescriptorHint(d)) => {
+                        Some(cay::program::schema::AnyHintRef::DmaDescriptorHint(d)) => {
                             let meta = d.meta().expect("meta");
                             let desc = meta.map(|m| m.desc().expect("desc"));
                             let name = meta.and_then(|m| m.name().expect("name"));
@@ -233,14 +233,14 @@ fn inspects_real_model_dma_hints() {
                                 d.size_in_bytes().expect("size"),
                             );
                         }
-                        Some(cay_program::schema::AnyHintRef::InstructionHint(i)) => eprintln!(
+                        Some(cay::program::schema::AnyHintRef::InstructionHint(i)) => eprintln!(
                             "  {hi}: {dir:?} Instruction chunk={}",
                             i.instruction_chunk_index().expect("chunk")
                         ),
-                        Some(cay_program::schema::AnyHintRef::InterruptHint(_)) => {
+                        Some(cay::program::schema::AnyHintRef::InterruptHint(_)) => {
                             eprintln!("  {hi}: {dir:?} Interrupt")
                         }
-                        Some(cay_program::schema::AnyHintRef::FenceHint(_)) => {
+                        Some(cay::program::schema::AnyHintRef::FenceHint(_)) => {
                             eprintln!("  {hi}: {dir:?} Fence")
                         }
                         None => eprintln!("  {hi}: {dir:?} (none)"),

@@ -2,9 +2,11 @@
 //! parameters (from the parameter-caching executable), the execution
 //! instructions, and the input/output byte sizes from the layer metadata.
 
-use crate::error::{Error, Result};
-use crate::package::{executable_blobs, multi_executable_bytes, parse_executable, parse_package};
-use crate::schema::{ExecutableRef, ExecutableType};
+use crate::program::error::{Error, Result};
+use crate::program::package::{
+    executable_blobs, multi_executable_bytes, parse_executable, parse_package,
+};
+use crate::program::schema::{ExecutableRef, ExecutableType};
 
 #[derive(Debug, Default, Clone)]
 pub struct Streams {

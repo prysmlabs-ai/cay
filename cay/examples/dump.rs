@@ -9,12 +9,12 @@ fn main() {
     dump(&model).expect("dump");
 }
 
-fn dump(model: &[u8]) -> cay_program::Result<()> {
-    let pkg = cay_program::extract_package(model).expect("no DWN1 package");
-    let parsed = cay_program::parse_package(pkg)?;
-    let multi = cay_program::multi_executable_bytes(&parsed)?;
-    for (bi, blob) in cay_program::executable_blobs(multi)?.iter().enumerate() {
-        let exec = cay_program::parse_executable(blob)?;
+fn dump(model: &[u8]) -> cay::program::Result<()> {
+    let pkg = cay::program::extract_package(model).expect("no DWN1 package");
+    let parsed = cay::program::parse_package(pkg)?;
+    let multi = cay::program::multi_executable_bytes(&parsed)?;
+    for (bi, blob) in cay::program::executable_blobs(multi)?.iter().enumerate() {
+        let exec = cay::program::parse_executable(blob)?;
         println!(
             "EXEC {bi} type={:?} token=0x{:x} params={}",
             exec.type_()?,
@@ -46,7 +46,7 @@ fn dump(model: &[u8]) -> cay_program::Result<()> {
             let h = h?;
             let dir = h.direction()?;
             match h.any_hint()? {
-                Some(cay_program::schema::AnyHintRef::DmaDescriptorHint(d)) => {
+                Some(cay::program::schema::AnyHintRef::DmaDescriptorHint(d)) => {
                     let (desc, name) = match d.meta()? {
                         Some(m) => (Some(m.desc()?), m.name()?),
                         None => (None, None),
@@ -57,13 +57,13 @@ fn dump(model: &[u8]) -> cay_program::Result<()> {
                         d.size_in_bytes()?
                     );
                 }
-                Some(cay_program::schema::AnyHintRef::InstructionHint(i)) => {
+                Some(cay::program::schema::AnyHintRef::InstructionHint(i)) => {
                     println!("    INSTR chunk={}", i.instruction_chunk_index()?);
                 }
-                Some(cay_program::schema::AnyHintRef::InterruptHint(_)) => {
+                Some(cay::program::schema::AnyHintRef::InterruptHint(_)) => {
                     println!("    INTERRUPT")
                 }
-                Some(cay_program::schema::AnyHintRef::FenceHint(_)) => println!("    FENCE"),
+                Some(cay::program::schema::AnyHintRef::FenceHint(_)) => println!("    FENCE"),
                 None => {}
             }
         }

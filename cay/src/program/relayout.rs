@@ -3,8 +3,8 @@
 //! the byte offset of that element block in the tiled buffer, which this
 //! reassembles into a row-major (y, x, z) tensor.
 
-use crate::error::{Error, Result};
-use crate::schema::OutputLayout;
+use crate::program::error::{Error, Result};
+use crate::program::schema::OutputLayout;
 
 fn at(map: &Option<Vec<i32>>, i: usize) -> Result<i64> {
     map.as_ref()

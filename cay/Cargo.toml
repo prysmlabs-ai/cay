@@ -43,5 +43,7 @@ path = "src/bin/cay_pipeline.rs"
 
 [dependencies]
 rusb = "0.9"
-cay-program = { path = "../cay-program" }
+planus = "1.3"
+# planus's generated owned types derive Serialize/Deserialize.
+serde = { version = "1", features = ["derive"] }
 libc = "0.2"

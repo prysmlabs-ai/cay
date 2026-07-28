@@ -14,8 +14,8 @@ fn bit_exact_inference() {
     };
 
     let model = std::fs::read(model_path).expect("read model");
-    let pkg = cay_program::extract_package(&model).expect("no DWN1 package");
-    let program = cay_program::Program::from_package(pkg).expect("build program");
+    let pkg = cay::program::extract_package(&model).expect("no DWN1 package");
+    let program = cay::program::Program::from_package(pkg).expect("build program");
     let input = std::fs::read(input_path).expect("read input");
     let expected = std::fs::read(expected_path).expect("read reference");
 

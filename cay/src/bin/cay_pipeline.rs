@@ -24,8 +24,8 @@ fn main() {
     for arg in &args[1..] {
         if arg.ends_with(".tflite") {
             let model = fs::read(arg).expect("read model");
-            let pkg = cay_program::extract_package(&model).expect("no DWN1 package in model");
-            segments.push(cay_program::Program::from_package(pkg).expect("build program"));
+            let pkg = cay::program::extract_package(&model).expect("no DWN1 package in model");
+            segments.push(cay::program::Program::from_package(pkg).expect("build program"));
         } else if let Some((name, path)) = arg.split_once('=') {
             pool.insert(name.to_string(), fs::read(path).expect("read input"));
         }

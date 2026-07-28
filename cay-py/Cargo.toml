@@ -5,6 +5,10 @@ edition = "2021"
 license = "Apache-2.0"
 description = "Python bindings for the Coral runtime — a pycoral-compatible drop-in."
 
+# Ships to PyPI via maturin, never to crates.io: a cdylib cannot be depended
+# on as a Rust crate.
+publish = false
+
 [lib]
 name = "cay"
 crate-type = ["cdylib"]
@@ -12,7 +16,6 @@ crate-type = ["cdylib"]
 [dependencies]
 pyo3 = { version = "0.22", features = ["extension-module", "abi3-py38"] }
 cay = { path = "../cay" }
-cay-program = { path = "../cay-program" }
 
 # Own workspace: a cdylib wheel needs its own release profile.
 [workspace]

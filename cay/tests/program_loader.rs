@@ -1,4 +1,4 @@
-use cay_program::schema::{MultiExecutable, Package};
+use cay::program::schema::{MultiExecutable, Package};
 use planus::Builder;
 
 fn build_multi(blobs: &[&str]) -> Vec<u8> {
@@ -40,7 +40,7 @@ fn add_darwinn_identifier(buf: &[u8]) -> Vec<u8> {
 fn blobs_match_planus_write_layout() {
     let blobs = ["executable-zero", "exec-one", "x"];
     let buf = build_multi(&blobs);
-    let got = cay_program::executable_blobs(&buf).unwrap();
+    let got = cay::program::executable_blobs(&buf).unwrap();
     assert_eq!(got.len(), blobs.len());
     for (slice, expected) in got.iter().zip(blobs.iter()) {
         assert_eq!(*slice, expected.as_bytes());
@@ -50,7 +50,7 @@ fn blobs_match_planus_write_layout() {
 #[test]
 fn empty_multi_executable_yields_no_blobs() {
     let buf = build_multi(&[]);
-    assert!(cay_program::executable_blobs(&buf).unwrap().is_empty());
+    assert!(cay::program::executable_blobs(&buf).unwrap().is_empty());
 }
 
 #[test]
@@ -58,11 +58,11 @@ fn package_roundtrips_to_blobs() {
     let multi = build_multi(&["exec-a", "exec-b"]);
     let buf = build_package(&multi);
 
-    let pkg = cay_program::parse_package(&buf).unwrap();
-    let inner = cay_program::multi_executable_bytes(&pkg).unwrap();
+    let pkg = cay::program::parse_package(&buf).unwrap();
+    let inner = cay::program::multi_executable_bytes(&pkg).unwrap();
     assert_eq!(inner, multi.as_slice());
 
-    let got = cay_program::executable_blobs(inner).unwrap();
+    let got = cay::program::executable_blobs(inner).unwrap();
     assert_eq!(got, vec![b"exec-a".as_slice(), b"exec-b".as_slice()]);
 }
 
@@ -70,8 +70,8 @@ fn package_roundtrips_to_blobs() {
 fn rejects_missing_identifier() {
     let buf = vec![0u8; 32];
     assert!(matches!(
-        cay_program::parse_package(&buf),
-        Err(cay_program::Error::BadIdentifier)
+        cay::program::parse_package(&buf),
+        Err(cay::program::Error::BadIdentifier)
     ));
 }
 
@@ -87,8 +87,8 @@ fn parsers_never_panic_on_garbage() {
     for _ in 0..50_000 {
         let len = (next() % 96) as usize;
         let buf: Vec<u8> = (0..len).map(|_| next() as u8).collect();
-        let _ = cay_program::executable_blobs(&buf);
-        let _ = cay_program::parse_package(&buf);
+        let _ = cay::program::executable_blobs(&buf);
+        let _ = cay::program::parse_package(&buf);
     }
 }
 
@@ -96,7 +96,7 @@ fn parsers_never_panic_on_garbage() {
 fn truncations_never_panic() {
     let valid = build_package(&build_multi(&["exec-a", "exec-b", "exec-c"]));
     for cut in 0..valid.len() {
-        let _ = cay_program::parse_package(&valid[..cut]);
-        let _ = cay_program::executable_blobs(&valid[..cut]);
+        let _ = cay::program::parse_package(&valid[..cut]);
+        let _ = cay::program::executable_blobs(&valid[..cut]);
     }
 }

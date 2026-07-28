@@ -4,10 +4,12 @@
 //! host follows to stream data over the single bulk endpoint. Supports models
 //! with multiple output tensors (e.g. detection heads).
 
-use crate::error::{Error, Result};
-use crate::package::{executable_blobs, multi_executable_bytes, parse_executable, parse_package};
-use crate::patch::{field_sites, FieldSite};
-use crate::schema::{
+use crate::program::error::{Error, Result};
+use crate::program::package::{
+    executable_blobs, multi_executable_bytes, parse_executable, parse_package,
+};
+use crate::program::patch::{field_sites, FieldSite};
+use crate::program::schema::{
     AnyHintRef, AnyLayerRef, DataType, Description, Direction, ExecutableRef, ExecutableType,
     OutputLayout,
 };

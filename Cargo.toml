@@ -1,8 +1,8 @@
 # An open, from-scratch userspace runtime for the Coral Edge TPU.
-# cay-program: DarwiNN executable reader. cay: USB transport + execution engine.
+# cay: DarwiNN executable reader (cay::program) + USB transport and execution.
 [workspace]
 resolver = "2"
-members = ["cay", "cay-program"]
+members = ["cay"]
 exclude = ["cay-py"]
 
 [profile.release]

@@ -12,7 +12,7 @@ use crate::dma::{DmaChunker, Processing};
 use crate::error::{Error, Result};
 use crate::ml::{Csr, DescriptorTag, EventDescriptor};
 
-use cay_program::{Action, Buffer, Program};
+use crate::program::{Action, Buffer, Program};
 
 const RUN: u64 = 1;
 const HALT: u64 = 2;
@@ -290,14 +290,14 @@ impl Driver {
         let mut logical = Vec::with_capacity(prog.outputs.len());
         for (spec, raw) in prog.outputs.iter().zip(outputs) {
             let mut tensor = match &spec.layout {
-                Some(layout) => cay_program::relayout(layout, &raw, spec.element_bytes)?,
+                Some(layout) => crate::program::relayout(layout, &raw, spec.element_bytes)?,
                 None => {
                     let n = spec.logical_bytes.min(raw.len());
                     raw[..n].to_vec()
                 }
             };
             if spec.signed {
-                cay_program::transform_signed(&mut tensor, spec.scalar_bytes);
+                crate::program::transform_signed(&mut tensor, spec.scalar_bytes);
             }
             logical.push(tensor);
         }
@@ -323,7 +323,7 @@ impl Driver {
             .map(|(i, spec)| {
                 let mut v = inputs.get(i).copied().unwrap_or(&[]).to_vec();
                 if i > 0 && spec.signed {
-                    cay_program::transform_signed(&mut v, spec.scalar_bytes);
+                    crate::program::transform_signed(&mut v, spec.scalar_bytes);
                 }
                 if v.len() < spec.bytes {
                     v.resize(spec.bytes, 0);
@@ -371,19 +371,19 @@ impl Driver {
             let mut chunks = phase.chunks.clone();
             for (chunk, sites) in chunks.iter_mut().zip(&phase.chunk_sites) {
                 if prog.scratch_bytes > 0 {
-                    cay_program::link_scratch(chunk, sites, scratch_addr)?;
+                    crate::program::link_scratch(chunk, sites, scratch_addr)?;
                 }
                 // Link the parameter base to this phase's own weights. A phase
                 // without its own weights (execution reading the on-chip cache)
                 // leaves the field at base 0.
                 if !phase.parameters.is_empty() {
-                    cay_program::link_parameter(chunk, sites, phase_param_addr)?;
+                    crate::program::link_parameter(chunk, sites, phase_param_addr)?;
                 }
                 for (spec, &addr) in prog.inputs.iter().zip(&input_addrs) {
-                    cay_program::link_input(chunk, sites, &spec.name, &[addr])?;
+                    crate::program::link_input(chunk, sites, &spec.name, &[addr])?;
                 }
                 for (spec, &addr) in prog.outputs.iter().zip(&output_addrs) {
-                    cay_program::link_output(chunk, sites, &spec.name, &[addr])?;
+                    crate::program::link_output(chunk, sites, &spec.name, &[addr])?;
                 }
             }
 
@@ -490,7 +490,7 @@ impl Driver {
                 // device's biased-unsigned form (libedgetpu TransformSignedDataType).
                 // The activation (index 0) is already device-ready — leave it.
                 if i > 0 && spec.signed {
-                    cay_program::transform_signed(&mut v, spec.scalar_bytes);
+                    crate::program::transform_signed(&mut v, spec.scalar_bytes);
                 }
                 if v.len() < spec.bytes {
                     v.resize(spec.bytes, 0);
@@ -547,16 +547,16 @@ impl Driver {
             let pa = ph.parameters.as_ptr() as u64;
             for (chunk, sites) in chunks.iter_mut().zip(&ph.chunk_sites) {
                 if prog.scratch_bytes > 0 {
-                    cay_program::link_scratch(chunk, sites, scratch_addr)?;
+                    crate::program::link_scratch(chunk, sites, scratch_addr)?;
                 }
                 if !ph.parameters.is_empty() {
-                    cay_program::link_parameter(chunk, sites, pa)?;
+                    crate::program::link_parameter(chunk, sites, pa)?;
                 }
                 for (name, addr) in &input_addrs {
-                    cay_program::link_input(chunk, sites, name, &[*addr])?;
+                    crate::program::link_input(chunk, sites, name, &[*addr])?;
                 }
                 for (spec, &addr) in prog.outputs.iter().zip(&output_addrs) {
-                    cay_program::link_output(chunk, sites, &spec.name, &[addr])?;
+                    crate::program::link_output(chunk, sites, &spec.name, &[addr])?;
                 }
             }
             phase_chunks.push(chunks);

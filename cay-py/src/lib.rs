@@ -13,7 +13,7 @@ fn err(context: &str, e: impl std::fmt::Display) -> PyErr {
 
 #[pyclass]
 struct Interpreter {
-    program: cay_program::Program,
+    program: ::cay::program::Program,
     input: Vec<u8>,
     output: Vec<u8>,
 }
@@ -23,9 +23,9 @@ impl Interpreter {
     #[new]
     fn new(model_path: &str) -> PyResult<Self> {
         let model = std::fs::read(model_path).map_err(|e| err("read model", e))?;
-        let pkg = cay_program::extract_package(&model)
+        let pkg = ::cay::program::extract_package(&model)
             .ok_or_else(|| PyRuntimeError::new_err("no DWN1 package in model"))?;
-        let program = cay_program::Program::from_package(pkg).map_err(|e| err("parse model", e))?;
+        let program = ::cay::program::Program::from_package(pkg).map_err(|e| err("parse model", e))?;
         Ok(Interpreter {
             program,
             input: Vec::new(),

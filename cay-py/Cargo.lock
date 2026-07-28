@@ -24,16 +24,9 @@ checksum = "f2032f911046de80f0a198e0901378627c33f59ea0ac00e363d481118bd70a53"
 name = "cay"
 version = "0.1.0"
 dependencies = [
- "cay-program",
  "libc",
- "rusb",
-]
-
-[[package]]
-name = "cay-program"
-version = "0.1.0"
-dependencies = [
  "planus",
+ "rusb",
  "serde",
 ]
 
@@ -42,7 +35,6 @@ name = "cay-py"
 version = "0.1.0"
 dependencies = [
  "cay",
- "cay-program",
  "pyo3",
 ]
 
