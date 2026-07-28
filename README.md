@@ -40,20 +40,36 @@ You need a compiled model. cay executes the Edge TPU program that
 
 ## Use
 
-The Python surface mirrors the pycoral calls that matter:
+The Python surface mirrors `tflite_runtime`'s `Interpreter`, so code written
+against the Edge TPU delegate runs here with an import swap:
 
 ```python
 from cay import make_interpreter
 
 interp = make_interpreter("model_edgetpu.tflite")
-interp.set_input(image_bytes)
+interp.allocate_tensors()
+
+inp = interp.get_input_details()[0]
+interp.set_tensor(inp["index"], image)          # numpy array or bytes
 interp.invoke()
-out = interp.get_output()
+
+for d in interp.get_output_details():
+    arr = interp.get_tensor(d["index"])          # numpy, shaped and typed
+    scale, zero_point = d["quantization"]
+    real = (arr.astype("float32") - zero_point) * scale
 ```
 
-`input_size` and `output_size` report the byte counts the program expects.
-`invoke` concatenates the output tensors in program order: one for a
-classifier, the raw heads for a detector.
+Details carry `index`, `name`, `shape`, `dtype` and `quantization`, the same
+keys tflite uses. Indices are positional handles, not tflite graph indices:
+inputs occupy `0..n` and outputs continue from `n`.
+
+**cay runs the Edge TPU program, not the whole graph.** Operators the compiler
+left on the CPU do not execute here, so a stock SSD model yields the raw box
+and score heads rather than decoded detections, and shapes keep any axis a
+later CPU `Squeeze` would have removed. Post-process in the caller. Models
+compiled without an on-CPU tail need nothing extra.
+
+`set_input` and `get_output` remain for single-input, concatenated-output use.
 
 From the shell:
 

@@ -9,6 +9,9 @@ name = "cay-py"
 version = "0.1.1"
 description = "Modern Rust runtime for the Coral Edge TPU — pycoral-compatible drop-in."
 requires-python = ">=3.8"
+# get_tensor builds arrays through numpy rather than rust-numpy, which keeps
+# the extension on the limited API and the wheel abi3.
+dependencies = ["numpy"]
 
 [tool.maturin]
 module-name = "cay"
