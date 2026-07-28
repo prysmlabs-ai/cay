@@ -17,8 +17,11 @@ the device over libusb from userspace, so none of that applies.
 Python, as a drop-in for the pycoral interpreter:
 
 ```sh
-pip install cay
+pip install cay-py
 ```
+
+The distribution is `cay-py` because `cay` is taken on PyPI; the import is
+`cay` either way.
 
 Rust:
 

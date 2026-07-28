@@ -3,7 +3,9 @@ requires = ["maturin>=1.0,<2.0"]
 build-backend = "maturin"
 
 [project]
-name = "cay"
+# The PyPI distribution is cay-py: `cay` is taken by an unrelated package.
+# module-name below keeps the import `cay`, which is what users type.
+name = "cay-py"
 version = "0.1.0"
 description = "Modern Rust runtime for the Coral Edge TPU — pycoral-compatible drop-in."
 requires-python = ">=3.8"
