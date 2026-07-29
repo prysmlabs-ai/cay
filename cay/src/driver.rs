@@ -60,6 +60,11 @@ pub struct Driver {
     /// not the caching token, since co-compiled segments share one token.
     /// Cleared whenever the device is reset (driver.cc current_parameter_caching_token_).
     resident_param: std::cell::Cell<u64>,
+    /// Inferences completed on this handle, so the stale-toggle allowance
+    /// applies only to the first one.
+    inferences: std::cell::Cell<usize>,
+    /// Whether this session has already absorbed a stale-toggle event loss.
+    lost_first_event: std::cell::Cell<bool>,
 }
 
 impl Drop for Driver {
@@ -97,7 +102,9 @@ impl Driver {
         // A process that died mid-transfer leaves endpoints stalled, and the
         // stall survives it: every read the next process posts fails. Clearing
         // on the way in is what lets a fresh open recover the device.
-        csr.clear_halts();
+        if std::env::var("CAY_NO_CLEAR_HALTS").is_err() {
+            csr.clear_halts();
+        }
         let bulk_in_chunk = if csr.is_high_speed() && !options.force_largest_bulk_in_chunk {
             256
         } else {
@@ -108,6 +115,8 @@ impl Driver {
             hardware_clock_gated: false,
             bulk_in_chunk,
             resident_param: std::cell::Cell::new(0),
+            inferences: std::cell::Cell::new(0),
+            lost_first_event: std::cell::Cell::new(false),
         };
         d.top_level_open()?;
         d.disable_hardware_clock_gate()?;
@@ -295,6 +304,9 @@ impl Driver {
         } else {
             self.run_descriptors(prog, inputs)
         };
+        if result.is_ok() {
+            self.inferences.set(self.inferences.get() + 1);
+        }
         if result.is_err() {
             // A port reset drops the SRAM-resident firmware, leaving the device
             // in DFU or off the bus, so it waits until the chip stops answering
@@ -484,8 +496,25 @@ impl Driver {
                     }
                     Action::Interrupt => {
                         for _ in 0..MAX_EVENTS {
-                            if self.read_event()?.tag >= 4 {
-                                break;
+                            match self.read_event() {
+                                Ok(event) => {
+                                    if event.tag >= 4 {
+                                        break;
+                                    }
+                                }
+                                Err(e) => {
+                                    // A session leaves the event endpoint's data
+                                    // toggle wherever its last read put it, and
+                                    // opening resets only the host's half. When
+                                    // they disagree the controller ACKs the first
+                                    // event and drops it, which resyncs them at
+                                    // the cost of that one event.
+                                    if self.inferences.get() > 0 || self.lost_first_event.get() {
+                                        return Err(e);
+                                    }
+                                    self.lost_first_event.set(true);
+                                    break;
+                                }
                             }
                         }
                     }
