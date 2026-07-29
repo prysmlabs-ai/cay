@@ -27,8 +27,12 @@ const MAX_EVENTS: usize = 256;
 // usb_bulk_in_queue_capacity default).
 const BULK_IN_QUEUE_CAPACITY: usize = 32;
 
-// Ceiling on how long to wait for one output tensor to stream back.
-const OUTPUT_TIMEOUT: Duration = Duration::from_secs(10);
+// Ceiling on how long to wait for one output tensor to stream back. Kept well
+// under the ten seconds after which a host like Frigate declares a detector
+// stuck and SIGKILLs it: giving up first turns a stalled inference into one
+// failed call, where being killed mid-transfer takes the device off the bus
+// until someone replugs it.
+const OUTPUT_TIMEOUT: Duration = Duration::from_secs(4);
 
 // Upper bound on device descriptors processed in one descriptor-mode inference.
 const MAX_DESCRIPTORS: usize = 8192;
@@ -64,15 +68,37 @@ impl Drop for Driver {
     }
 }
 
+/// Tunables that change how the driver talks to the device.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Options {
+    /// Read bulk-in in 1 KB chunks even on a USB2 High Speed link.
+    ///
+    /// The 256-byte cap is a host-controller workaround (libedgetpu's
+    /// `usb_force_largest_bulk_in_chunk_size`, b/73181174): it lets a controller
+    /// that dislikes short packets know every response is exactly 256 bytes.
+    /// Controllers that do not need it pay four times the transfer count for an
+    /// outfeed. Measure before setting this — a controller that needs the
+    /// workaround corrupts large outputs without it.
+    pub force_largest_bulk_in_chunk: bool,
+}
+
 impl Driver {
     /// Opens the runtime device and brings the chip out of reset, up to and
     /// including InitializeChip. Use `run` to move the scalar core to running.
     pub fn open() -> Result<Self> {
+        Self::open_with(Options::default())
+    }
+
+    pub fn open_with(options: Options) -> Result<Self> {
         let csr = Csr::open()?;
         // CSR access is device-recipient control transfers and needs no claimed
         // interface; the bulk endpoints do, so claim best-effort here.
         let _ = csr.claim(0);
-        let bulk_in_chunk = if csr.is_high_speed() { 256 } else { 1024 };
+        let bulk_in_chunk = if csr.is_high_speed() && !options.force_largest_bulk_in_chunk {
+            256
+        } else {
+            1024
+        };
         let mut d = Self {
             csr,
             hardware_clock_gated: false,

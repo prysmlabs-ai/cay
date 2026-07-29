@@ -140,11 +140,32 @@ impl Interpreter {
                 self.inputs.len()
             )));
         }
-        let data: Vec<u8> = match value.call_method0("tobytes") {
-            Ok(b) => b.extract()?,
-            Err(_) => value.extract()?,
-        };
         let want = self.program.inputs[index].bytes;
+        let raw = match value.call_method0("tobytes") {
+            Ok(bytes) => bytes,
+            Err(_) => value.clone(),
+        };
+
+        // Copy the bytes object straight out. Extracting it into a `Vec<u8>`
+        // instead goes through pyo3's sequence path, one element at a time:
+        // 1.7 ms for a 300x300x3 frame against 0.03 ms for the memcpy. The
+        // buffer protocol would skip `tobytes()` too, but it is missing from the
+        // limited API below 3.11 and the abi3 floor is worth more.
+        if let Ok(bytes) = raw.downcast::<PyBytes>() {
+            let source = bytes.as_bytes();
+            if source.len() != want {
+                return Err(PyRuntimeError::new_err(format!(
+                    "input {index} expects {want} bytes, got {}",
+                    source.len()
+                )));
+            }
+            let target = &mut self.inputs[index];
+            target.clear();
+            target.extend_from_slice(source);
+            return Ok(());
+        }
+
+        let data: Vec<u8> = raw.extract()?;
         if data.len() != want {
             return Err(PyRuntimeError::new_err(format!(
                 "input {index} expects {want} bytes, got {}",
