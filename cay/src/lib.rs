@@ -2,6 +2,7 @@
 //! the accelerator directly over USB with no TFLite delegate or vendor binary.
 
 pub mod bulk_in;
+pub mod bulk_out;
 pub mod csr;
 pub mod dfu;
 pub mod dma;

@@ -5,7 +5,7 @@
 
 use std::time::Duration;
 
-use rusb::{request_type, Direction, GlobalContext, Recipient, RequestType, UsbContext};
+use rusb::{request_type, Context, Direction, Recipient, RequestType, UsbContext};
 
 use crate::error::{Error, Result};
 use crate::usb;
@@ -94,16 +94,39 @@ pub fn parse_interrupt(bytes: &[u8]) -> Option<u32> {
 
 /// A CSR channel over the open runtime device.
 pub struct Csr {
-    handle: rusb::DeviceHandle<GlobalContext>,
+    handle: rusb::DeviceHandle<Context>,
 }
 
 impl Csr {
     /// Opens the runtime-mode Coral (18d1:9302).
     pub fn open() -> Result<Self> {
-        let handle = rusb::open_device_with_vid_pid(usb::RUNTIME_VENDOR, usb::RUNTIME_PRODUCT)
+        // A private context per device. Event handling is per-context, so only
+        // this handle's own pumping runs its completion callbacks; a shared one
+        // lets another device's event loop run them on a second thread, racing
+        // the code that reads what they write.
+        let context = Context::new()?;
+        let handle = context
+            .open_device_with_vid_pid(usb::RUNTIME_VENDOR, usb::RUNTIME_PRODUCT)
             .ok_or(Error::DeviceNotFound)?;
         let _ = handle.set_active_configuration(1);
         Ok(Self { handle })
+    }
+
+    /// Opens once the device answers again, for use after a port reset drops it
+    /// off the bus for about a second.
+    pub fn open_settled(timeout: Duration) -> Result<Self> {
+        let deadline = std::time::Instant::now() + timeout;
+        loop {
+            match Self::open() {
+                Ok(csr) if csr.read32(crate::csr::OMC0_00).is_ok() => return Ok(csr),
+                other => {
+                    if std::time::Instant::now() >= deadline {
+                        return other.and(Err(Error::DeviceNotFound));
+                    }
+                }
+            }
+            std::thread::sleep(Duration::from_millis(20));
+        }
     }
 
     pub fn read32(&self, offset: u32) -> Result<u32> {
@@ -235,6 +258,6 @@ impl Csr {
 
     /// Raw libusb context backing this handle, for `handle_events`.
     pub fn raw_context(&self) -> *mut rusb::ffi::libusb_context {
-        GlobalContext::default().as_raw()
+        self.handle.context().as_raw()
     }
 }

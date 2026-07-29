@@ -39,7 +39,7 @@ fn main() {
         programs.iter().map(|p| p.outputs.len()).sum::<usize>(),
     );
 
-    let driver = cay::driver::Driver::open().expect("chip bring-up");
+    let mut driver = cay::driver::Driver::open().expect("chip bring-up");
     driver.run().expect("run");
 
     // CORAL_ITERS>1 re-runs the whole model on the one open device: the second

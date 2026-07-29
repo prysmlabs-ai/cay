@@ -7,6 +7,7 @@
 use std::time::Duration;
 
 use crate::bulk_in::BulkInPool;
+use crate::bulk_out::BulkOut;
 use crate::csr;
 use crate::dma::{DmaChunker, Processing};
 use crate::error::{Error, Result};
@@ -37,6 +38,12 @@ const OUTPUT_TIMEOUT: Duration = Duration::from_secs(4);
 // Upper bound on device descriptors processed in one descriptor-mode inference.
 const MAX_DESCRIPTORS: usize = 8192;
 
+// Re-enumeration after a port reset measures ~0.9 s. The ceiling keeps a failed
+// inference plus a recovery inside the ten seconds after which a host like
+// Frigate declares the detector stuck: killed mid-reset is what takes the device
+// off the bus until someone replugs it.
+const RESET_SETTLE: Duration = Duration::from_secs(2);
+
 const POLL_ATTEMPTS: u32 = 2000;
 const POLL_INTERVAL: Duration = Duration::from_millis(1);
 
@@ -65,6 +72,8 @@ pub struct Driver {
     inferences: std::cell::Cell<usize>,
     /// Whether this session has already absorbed a stale-toggle event loss.
     lost_first_event: std::cell::Cell<bool>,
+    /// Writes queued but not yet taken by the device.
+    out: std::cell::RefCell<Option<BulkOut>>,
 }
 
 impl Drop for Driver {
@@ -96,15 +105,6 @@ impl Driver {
 
     pub fn open_with(options: Options) -> Result<Self> {
         let csr = Csr::open()?;
-        // CSR access is device-recipient control transfers and needs no claimed
-        // interface; the bulk endpoints do, so claim best-effort here.
-        let _ = csr.claim(0);
-        // A process that died mid-transfer leaves endpoints stalled, and the
-        // stall survives it: every read the next process posts fails. Clearing
-        // on the way in is what lets a fresh open recover the device.
-        if std::env::var("CAY_NO_CLEAR_HALTS").is_err() {
-            csr.clear_halts();
-        }
         let bulk_in_chunk = if csr.is_high_speed() && !options.force_largest_bulk_in_chunk {
             256
         } else {
@@ -117,15 +117,35 @@ impl Driver {
             resident_param: std::cell::Cell::new(0),
             inferences: std::cell::Cell::new(0),
             lost_first_event: std::cell::Cell::new(false),
+            out: std::cell::RefCell::new(None),
         };
-        d.top_level_open()?;
-        d.disable_hardware_clock_gate()?;
-        d.enable_reset()?;
-        d.quit_reset()?;
-        d.enable_hardware_clock_gate()?;
-        d.initialize_chip()?;
-        d.enable_interrupts()?;
+        d.bring_up()?;
         Ok(d)
+    }
+
+    /// Takes the chip from whatever state `self.csr` was opened in to the end of
+    /// InitializeChip.
+    fn bring_up(&mut self) -> Result<()> {
+        // CSR access is device-recipient control transfers and needs no claimed
+        // interface; the bulk endpoints do, so claim best-effort here.
+        let _ = self.csr.claim(0);
+        // A process that died mid-transfer leaves endpoints stalled, and the
+        // stall survives it: every read the next process posts fails. Clearing
+        // on the way in is what lets a fresh open recover the device.
+        self.csr.clear_halts();
+        // The device keeps its bulk-out data toggle across sessions while a fresh
+        // handle starts at DATA0. Disagreeing, it discards the first stream header
+        // and reads the payload as one, so it never computes. A zero-length packet
+        // puts the two in step either way.
+        let _ = self.csr.bulk_out(&[]);
+        self.hardware_clock_gated = false;
+        self.top_level_open()?;
+        self.disable_hardware_clock_gate()?;
+        self.enable_reset()?;
+        self.quit_reset()?;
+        self.enable_hardware_clock_gate()?;
+        self.initialize_chip()?;
+        self.enable_interrupts()
     }
 
     fn poll32(&self, offset: u32, pred: impl Fn(u32) -> bool) -> Result<()> {
@@ -275,16 +295,33 @@ impl Driver {
     /// Streams a tagged buffer to the single bulk-out endpoint: the 8-byte header
     /// then the payload, chunked to the max bulk-out transfer size.
     pub fn submit_stream(&self, tag: DescriptorTag, data: &[u8]) -> Result<()> {
-        self.csr.write_header(tag, data.len() as u32)?;
+        let mut slot = self.out.borrow_mut();
+        if slot.is_none() {
+            *slot = Some(unsafe { BulkOut::new(self.csr.raw_handle(), self.csr.raw_context()) });
+        }
+        let out = slot.as_mut().expect("built above");
+
+        out.submit(
+            crate::ml::BULK_OUT,
+            &crate::ml::packet_header(tag, data.len() as u32),
+        )?;
         let mut chunker = DmaChunker::new(Processing::Committed, data.len());
         while chunker.has_next_chunk() {
             let chunk = chunker.next_chunk_upto(MAX_BULK_OUT);
-            let sent = self
-                .csr
-                .bulk_out(&data[chunk.offset..chunk.offset + chunk.len])?;
-            chunker.notify_transfer(sent)?;
+            let slice = &data[chunk.offset..chunk.offset + chunk.len];
+            out.submit(crate::ml::BULK_OUT, slice)?;
+            chunker.notify_transfer(slice.len())?;
         }
         Ok(())
+    }
+
+    /// Waits for every queued write to reach the device.
+    fn flush_writes(&self) -> Result<()> {
+        let mut slot = self.out.borrow_mut();
+        match slot.as_mut() {
+            Some(out) if out.pending() => out.flush(OUTPUT_TIMEOUT),
+            _ => Ok(()),
+        }
     }
 
     /// Reads one event descriptor from the event endpoint.
@@ -298,26 +335,53 @@ impl Driver {
     /// Runs one inference. `inputs[i]` supplies data for `prog.inputs[i]` (index 0
     /// is the primary activation). Returns one buffer per tensor in `prog.outputs`.
     /// On failure recovers the device so a timeout is not terminal.
-    pub fn run_program(&self, prog: &Program, inputs: &[&[u8]]) -> Result<Vec<Vec<u8>>> {
-        let result = if prog.phases.iter().all(|p| p.fully_deterministic) {
+    pub fn run_program(&mut self, prog: &Program, inputs: &[&[u8]]) -> Result<Vec<Vec<u8>>> {
+        match self.attempt(prog, inputs) {
+            Ok(outputs) => {
+                self.inferences.set(self.inferences.get() + 1);
+                Ok(outputs)
+            }
+            Err(first) => {
+                // A session that used a scratch buffer leaves the accelerator
+                // unable to start the next one: it takes bulk-out and answers
+                // CSR reads, but computes nothing, so the first outfeed never
+                // arrives. Only a port reset clears that, which is why
+                // libedgetpu does one on every open (UsbDriver::PrepareUsbDevice).
+                // Doing it on failure instead keeps the cost off a working open,
+                // where it would be most of the time.
+                self.recover().map_err(|_| first)?;
+                let outputs = self.attempt(prog, inputs)?;
+                self.inferences.set(self.inferences.get() + 1);
+                Ok(outputs)
+            }
+        }
+    }
+
+    fn attempt(&self, prog: &Program, inputs: &[&[u8]]) -> Result<Vec<Vec<u8>>> {
+        if prog.phases.iter().all(|p| p.fully_deterministic) {
             self.run_hints(prog, inputs)
         } else {
             self.run_descriptors(prog, inputs)
-        };
-        if result.is_ok() {
-            self.inferences.set(self.inferences.get() + 1);
         }
-        if result.is_err() {
-            // A port reset drops the SRAM-resident firmware, leaving the device
-            // in DFU or off the bus, so it waits until the chip stops answering
-            // control transfers and nothing else can reach it.
-            self.csr.clear_halts();
-            if self.halt().is_err() {
-                let _ = self.csr.reset();
-            }
-            self.resident_param.set(0);
-        }
-        result
+    }
+
+    /// Port-resets the device and brings it back to the state `open` leaves it
+    /// in. The reset costs about a second and drops the handle, so the chip is
+    /// reopened once it answers again.
+    fn recover(&mut self) -> Result<()> {
+        // Dropping the writer cancels queued writes, and a bulk-out cancelled
+        // mid-transfer leaves the chip mid-DMA, which the reset below makes
+        // permanent: the device leaves the bus until someone replugs it.
+        let _ = self.flush_writes();
+        self.out.replace(None);
+        self.resident_param.set(0);
+        self.inferences.set(0);
+        self.lost_first_event.set(false);
+        self.csr.clear_halts();
+        let _ = self.csr.reset();
+        self.csr = Csr::open_settled(RESET_SETTLE)?;
+        self.bring_up()?;
+        self.run()
     }
 
     /// Leaves the chip idle for whoever opens it next, so a process that exits
@@ -529,6 +593,7 @@ impl Driver {
 
         // Output fully drained; cancel the remaining posted reads.
         drop(pool);
+        self.flush_writes()?;
 
         // libedgetpu checks this after each run; a non-zero status means the
         // accelerator faulted and the output activations are not trustworthy.
@@ -696,6 +761,7 @@ impl Driver {
         }
 
         drop(pool);
+        self.flush_writes()?;
         let _ = self.csr.write64(csr::DESCR_EP, 0xF0);
 
         let hib = self.csr.read64(csr::HIB_ERROR_STATUS)?;
@@ -709,7 +775,16 @@ impl Driver {
 
 #[cfg(test)]
 mod tests {
-    use super::{get_bits, set_bits};
+    use super::{get_bits, set_bits, Driver};
+
+    // cay-py holds a Driver in a `#[pyclass]`, which pyo3 accepts only if it is
+    // `Send`. That crate is a separate workspace, so a `!Send` field breaks the
+    // bindings with nothing here to catch it.
+    #[test]
+    fn driver_is_send() {
+        fn assert_send<T: Send>() {}
+        assert_send::<Driver>();
+    }
 
     #[test]
     fn bitfield_roundtrip_preserves_neighbors() {

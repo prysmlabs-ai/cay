@@ -35,7 +35,7 @@ fn main() {
         std::process::exit(2);
     }
 
-    let driver = cay::driver::Driver::open().expect("chip bring-up");
+    let mut driver = cay::driver::Driver::open().expect("chip bring-up");
     driver.run().expect("run");
 
     let mut last: Vec<(String, Vec<u8>)> = Vec::new();

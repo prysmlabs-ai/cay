@@ -16,7 +16,7 @@ checksum = "ed51fe0f224d1d4ea768be38c51f9f831dee9d05c163c11fba0b8c44387b1fc3"
 
 [[package]]
 name = "cay"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "libc",
  "planus",

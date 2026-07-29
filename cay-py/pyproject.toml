@@ -6,7 +6,7 @@ build-backend = "maturin"
 # The PyPI distribution is cay-py: `cay` is taken by an unrelated package.
 # module-name below keeps the import `cay`, which is what users type.
 name = "cay-py"
-version = "0.1.1"
+version = "0.1.2"
 description = "Modern Rust runtime for the Coral Edge TPU — pycoral-compatible drop-in."
 requires-python = ">=3.8"
 # get_tensor builds arrays through numpy rather than rust-numpy, which keeps

@@ -19,7 +19,7 @@ fn bit_exact_inference() {
     let input = std::fs::read(input_path).expect("read input");
     let expected = std::fs::read(expected_path).expect("read reference");
 
-    let driver = cay::driver::Driver::open().expect("chip bring-up");
+    let mut driver = cay::driver::Driver::open().expect("chip bring-up");
     driver.run().expect("run");
     let outs = driver.run_program(&program, &[&input]).expect("inference");
     // Outputs concatenated in program order; the reference is captured the same

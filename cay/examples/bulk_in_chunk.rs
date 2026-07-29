@@ -25,7 +25,7 @@ fn percentiles(mut samples: Vec<Duration>) -> (f64, f64, f64) {
 }
 
 fn run(program: &Program, options: Options) -> Option<(Vec<Duration>, Vec<Vec<u8>>)> {
-    let driver = Driver::open_with(options).expect("open");
+    let mut driver = Driver::open_with(options).expect("open");
     driver.run().expect("run");
     let inputs: Vec<Vec<u8>> = program
         .inputs

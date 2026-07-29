@@ -185,7 +185,7 @@ impl Interpreter {
             self.driver = Some(d);
         }
         let refs: Vec<&[u8]> = self.inputs.iter().map(|v| v.as_slice()).collect();
-        let driver = self.driver.as_ref().expect("opened above");
+        let driver = self.driver.as_mut().expect("opened above");
         match driver.run_program(&self.program, &refs) {
             Ok(outputs) => {
                 self.outputs = outputs;
