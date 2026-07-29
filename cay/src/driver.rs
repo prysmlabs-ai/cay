@@ -94,6 +94,10 @@ impl Driver {
         // CSR access is device-recipient control transfers and needs no claimed
         // interface; the bulk endpoints do, so claim best-effort here.
         let _ = csr.claim(0);
+        // A process that died mid-transfer leaves endpoints stalled, and the
+        // stall survives it: every read the next process posts fails. Clearing
+        // on the way in is what lets a fresh open recover the device.
+        csr.clear_halts();
         let bulk_in_chunk = if csr.is_high_speed() && !options.force_largest_bulk_in_chunk {
             256
         } else {
